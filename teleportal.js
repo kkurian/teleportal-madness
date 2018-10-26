@@ -120,12 +120,14 @@
 
     function createTeleportalA() {
         var now = new Date();
+        var guid = quasiGUID();
+        var position = MyAvatar.position;
         var document = {
-            ID: quasiGUID(),
+            ID_0: guid,
             USERNAME: Account.username,
             HOSTNAME_0: AddressManager.hostname,
-            XYZ_0: MyAvatar.position,
-            CREATED_AT: now.toUTCString() };
+            XYZ_0: position,
+            CREATED_AT_0: now.toUTCString() };
         print("Emplace first teleportal: ", JSON.stringify(document));
         dbInsert(document);
         rezTeleportal();
@@ -133,10 +135,13 @@
 
     function createTeleportalB(response) {
         var now = new Date();
+        var guid = quasiGUID();
+        var position = MyAvatar.position;
         var fields = {
+            ID_1: guid,
             HOSTNAME_1: AddressManager.hostname,
-            XYZ_1: MyAvatar.position,
-            UPDATED_AT: now.toUTCString() };
+            XYZ_1: position,
+            CREATED_AT_1: now.toUTCString() };
         print("Found incomplete pair: ", JSON.stringify(response[0]));
         print("Emplace second teleportal: ", JSON.stringify(fields));
         dbUpdate(response[0]._id, fields);
