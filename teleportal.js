@@ -48,6 +48,23 @@
         }, processResults);
     }
 
+    function dbDeleteRecords(ids) {
+        request({
+            uri: DB_BASE_URL + '/*',
+            method: 'DELETE',
+            json: true,
+            body: ids,
+            headers: RESTDB_API_KEY
+        }, printResponse);
+    }
+
+    function dbDeleteAllTeleportalsForUser(username) {
+        dbSearch({ USERNAME: username }, function (err, response) {
+            var ids = response.map(function (x, i) { return x._id; }); // eslint-disable-line brace-style
+            dbDeleteRecords(ids);
+        });
+    }
+
     function handleUpdateResult(id, err, response) {
         if (err || response._id !== id) {
             print("Error during update: ", JSON.stringify(err), JSON.stringify(response));
@@ -106,12 +123,24 @@
             handleSearchResult);
     }
 
+    function clearTeleportals() {
+        dbDeleteAllTeleportalsForUser(Account.username);
+    }
+
     function keyPressEvent(key) {
         // TODO: Do something informative if the user is not logged in.
         if (Account.username !== 'Unknown user') {
-            var lowercaseT = 84;
-            if (key.key === lowercaseT) {
-                emplaceTeleportal();
+            var actual = String.fromCharCode(key.key);
+            actual = key.isShifted ? actual : actual.toLowerCase();
+            print("actual:", actual);
+            switch (actual) {
+                case 'T':
+                    print("emplace teleportal");
+                    emplaceTeleportal();
+                    break;
+                case 'C':
+                    clearTeleportals();
+                    break;
             }
         }
     }
