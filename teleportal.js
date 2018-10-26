@@ -92,14 +92,14 @@
                     var document = {
                         ID: quasiGUID(),
                         USERNAME: Account.username,
-                        DOMAIN_0: AddressManager.domainID,
+                        DOMAIN_0: AddressManager.hostname,
                         XYZ_0: MyAvatar.position,
                         CREATED_AT: now.toUTCString() };
                     print("Emplace first teleportal: ", JSON.stringify(document));
                     dbInsert(document);
                 } else if (1 === response.length) {
                     var fields = {
-                        DOMAIN_1: AddressManager.domainID,
+                        DOMAIN_1: AddressManager.hostname,
                         XYZ_1: MyAvatar.position,
                         UPDATED_AT: now.toUTCString() };
                     print("Found incomplete pair: ", JSON.stringify(response[0]));
@@ -147,7 +147,7 @@
     }
 
     function updateTeleportalsListUntilNotPolling() {
-        var thisDomain = AddressManager.domainID;
+        var thisDomain = AddressManager.hostname;
         dbSearch(
             { $or: [{ DOMAIN_0: thisDomain }, { DOMAIN_1: thisDomain }] },
             function (err, response) {
