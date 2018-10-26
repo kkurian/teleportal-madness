@@ -4,8 +4,8 @@
 (function () { // BEGIN LOCAL SCOPE
     // var AppUi = Script.require('appUi');
     var request = Script.require('request').request;
-    var DB_BASE_URL = 'https://teleportal-66ab.restdb.io/rest/teleportals';
     var RESTDB_API_KEY = { 'x-apikey': '5bd33229cb62286429f4ee76' };
+    var RESTDB_BASE_URL = 'https://teleportal-66ab.restdb.io/rest/teleportals';
     var UPDATE_INTERVAL_MSEC = 1000;
 
     var isPolling = false;
@@ -31,7 +31,7 @@
 
     function dbInsert(document) {
         request({
-            uri: DB_BASE_URL,
+            uri: RESTDB_BASE_URL,
             method: 'POST',
             json: true,
             body: document,
@@ -41,7 +41,7 @@
 
     function dbSearch(document, processResults) {
         request({
-            uri: DB_BASE_URL,
+            uri: RESTDB_BASE_URL,
             method: 'GET',
             body: { q: JSON.stringify(document) }, // request() puts these in the uri
             headers: RESTDB_API_KEY
@@ -50,7 +50,7 @@
 
     function dbDeleteRecords(ids) {
         request({
-            uri: DB_BASE_URL + '/*',
+            uri: RESTDB_BASE_URL + '/*',
             method: 'DELETE',
             json: true,
             body: ids,
@@ -73,7 +73,7 @@
 
     function dbUpdate(id, fields) {
         request({
-            url: DB_BASE_URL + '/' + id,
+            url: RESTDB_BASE_URL + '/' + id,
             method: 'PATCH',
             json: true,
             body: fields,
