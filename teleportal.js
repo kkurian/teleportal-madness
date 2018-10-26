@@ -44,24 +44,6 @@
         };
     }
 
-    function ensureSearchOrUpdate(retry, finish) {
-        return function (err, response) {
-            if (!response || 500 <= response.statusCode) { // eslint-disable-line no-magic-numbers
-                dbReportErrorRetry(err, response);
-                Script.setTimeout(retry, RETRY_DELAY_MSEC);
-            } else {
-                finish(err, response);
-            }
-        };
-    }
-
-    // function sheetsuGet() {
-    //     request({
-    //         uri: 'https://sheetsu.com/apis/v1.0su/67b8d3a149a5',
-    //         method: 'GET'
-    //     }, sheetsuHandleResponse(sheetsuGet) );
-    // }
-
     function dbCreate(data) {
         request({
             uri: DB_BASE_URL,
@@ -76,95 +58,66 @@
     function dbSearch(queryComponents, processResults) {
         request({
             uri: DB_BASE_URL + '/search',
-            body: queryComponents // request puts these in the uri
+            body: queryComponents // request() puts these in the uri
         }, processResults);
     }
 
-    function dbUpdate(id, fields, retry, finish) {
+    function handleUpdateResult(err, response) {
+        if (!response || response.statusCode || 1 !== response.length) {
+            print("Failed to emplace teleportal or emplaced it multiple times!");
+            print("err: ", JSON.stringify(err));
+            print("response: ", JSON.stringify(response));
+        }
+    }
+
+    function dbUpdate(id, fields) {
         request({
             url: DB_BASE_URL + '/ID/' + id,
             method: 'PATCH',
             json: true,
             body: fields
-        }, ensureSearchOrUpdate(retry, finish));
+        }, handleUpdateResult);
     }
 
-    function elseEmplaceFirstTeleportal() {
-        var now = new Date();
-        var row = {
-            ID: quasiGUID(),
-            USERNAME: Account.username,
-            DOMAIN_0: AddressManager.domainID,
-            DOMAIN_1: 'null',
-            XYZ_0: MyAvatar.position,
-            CREATED_AT: now.toUTCString() };
-        print("Emplace first teleportal: ", JSON.stringify(row));
-        dbCreate(row);
-    }
-
-    function emplaceSecondTeleportal(rows) {
-        function retry() {
-            emplaceSecondTeleportal(rows);
-        }
-
-        function finish(err, response) {
-            if (!response || 0 === response.length) {
-                print(
-                    "Update did not fail (5xx) yet nothing updated! ",
-                    "err: ", JSON.stringify(err),
-                    "response: ", JSON.stringify(response));
-            } else if (1 !== response.length) {
-                // XXX What to do? We have updated more than one row.
-                // This should *never* happen because we key off of a
-                // quasi-guid.
-                print(
-                    "Data corruption? Updated more than one row! ",
-                    "err: ", JSON.stringify(err),
-                    "response: ", JSON.stringify(response));
-            }
-        }
-
-        var now = new Date();
-        var fields = {
-            DOMAIN_1: AddressManager.domainID,
-            XYZ_1: MyAvatar.position,
-            UPDATED_AT: now.toUTCString() };
-        dbUpdate(rows[0].ID, fields, retry, finish);
-    }
-
-    function whenFirstTeleportalIsEmplaced(doThis, elseDoThat) {
-        function retry() {
-            whenFirstTeleportalIsEmplaced(doThis, elseDoThat);
-        }
-
-        function finish(err, response) {
-            if (404 !== response.statusCode) { // eslint-disable-line no-magic-numbers
-                if (1 !== response.length) {
-                    // XXX What to do? We have found more than one
-                    // candidate row for updating. This might happen on
-                    // rare occaision due to a race condition that is
-                    // unavoidable given our choice of "database".
-                    print("Data corruption? More than one match! Silently dropping this error.");
+    function handleSearchResult(err, response) {
+        if (response) {
+            var now = new Date();
+            if (response.statusCode) {
+                if (404 === response.statusCode) { // eslint-disable-line no-magic-numbers
+                    var row = {
+                        ID: quasiGUID(),
+                        USERNAME: Account.username,
+                        DOMAIN_0: AddressManager.domainID,
+                        XYZ_0: MyAvatar.position,
+                        CREATED_AT: now.toUTCString() };
+                    print("Emplace first teleportal: ", JSON.stringify(row));
+                    dbCreate(row);
+                } else if (500 <= response.statusCode) { // eslint-disable-line no-magic-numbers
+                    dbReportErrorRetry(err, response);
+                    Script.setTimeout(emplaceTeleportal, RETRY_DELAY_MSEC);
                 } else {
-                    print("First teleportal is already emplaced: ", JSON.stringify(response));
-                    doThis(response);
+                    print("Unexpected status code: ", JSON.stringify(response));
                 }
+            } else if (1 === response.length) {
+                var fields = {
+                    DOMAIN_1: AddressManager.domainID,
+                    XYZ_1: MyAvatar.position,
+                    UPDATED_AT: now.toUTCString() };
+                print("Emplace second teleportal: ", JSON.stringify(fields));
+                dbUpdate(response[0].ID, fields);
             } else {
-                print("First teleportal has yet to be emplaced: ", JSON.stringify(response));
-                elseDoThat();
+                print("Unexpected response: ", JSON.stringify(response));
+                print("Corresponding error: ", JSON.stringify(err));
             }
+        } else {
+            print("Error. No response: ", JSON.stringify(err));
         }
-
-        dbSearch(
-            { USERNAME: Account.username, DOMAIN_1: 'null' },
-            ensureSearchOrUpdate(retry, finish)
-        );
     }
 
     function emplaceTeleportal() {
-        whenFirstTeleportalIsEmplaced(
-            emplaceSecondTeleportal,
-            elseEmplaceFirstTeleportal);
+        dbSearch(
+            { USERNAME: Account.username, DOMAIN_1: '' },
+            handleSearchResult);
     }
 
     function keyPressEvent(key) {
