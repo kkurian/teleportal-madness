@@ -1,6 +1,6 @@
 'use strict';
 /* jslint vars:true, plusplus:true, forin:true */
-/* global Script, print */
+/* global Script, AddressManager */
 (function () { // BEGIN LOCAL SCOPE
     // var AppUi = Script.require('appUi');
     var request = Script.require('request').request;
@@ -9,41 +9,67 @@
     // }
 
     function sheetsuHandleResponse(retry) {
+        var delaymsec = 1000;
         return function(err, response) {
-            if (err) {
-                print('sheetsu erred. trying again: ', err || response.status);
-                setTimeout(retry, 1000);
-            } else {
+            var isSuccess = 200 <= response.statusCode && response.statusCode < 300; // eslint-disable-line no-magic-numbers
+            if (isSuccess) {
                 print('sheetsu success: ', JSON.stringify(response));
+            } else {
+                print('sheetsu erred. trying again: ', err || response.status);
+                Script.setTimeout(retry, delaymsec);
             }
         };
     }
 
-    var sheetsuGet = function () {
+    // function sheetsuGet() {
+    //     request({
+    //         uri: 'https://sheetsu.com/apis/v1.0su/67b8d3a149a5',
+    //         method: 'GET'
+    //     }, sheetsuHandleResponse(sheetsuGet) );
+    // }
+
+    function dbCreate(data) {
         request({
             uri: 'https://sheetsu.com/apis/v1.0su/67b8d3a149a5',
-            method: 'GET'
-        }, sheetsuHandleResponse(sheetsuGet) );
-    };
-
-    var sheetsuUpdate = function () {
-        request({
-            uri: 'https://sheetsu.com/apis/v1.0su/67b8d3a149a5/ID/1',
-            method: 'PATCH',
+            method: 'POST',
             json: true,
-            body: { 'DATA': 'foobar' }
-        }, sheetsuHandleResponse(sheetsuUpdate) );
-    };
+            body: data
+        }, sheetsuHandleResponse(function () {
+            dbCreate(data);
+        }));
+    }
+
+    function dbWriteCurrentLocation() {
+        var now = new Date();
+        dbCreate({
+            USERNAME: Account.username,
+            DOMAIN_0: AddressManager.domainID,
+            XYZ_0: MyAvatar.position,
+            CREATED_AT: now.toUTCString()
+        });
+    }
+
+    function keyPressEvent(key) {
+        // TODO: Do something informative if the user is not logged in.
+        if (Account.username !== 'Unknown user') {
+            var lowercaseT = 84;
+            if (key.key === lowercaseT) {
+                dbWriteCurrentLocation();
+            }
+        }
+    }
 
     function startup() {
-        sheetsuGet();
-        sheetsuUpdate();
-
+        Controller.keyPressEvent.connect(keyPressEvent);
         // ui = new AppUi({
         //   buttonName: "Teleportal Madness",
         //   home: Script.resolvePath("teleportal.html"),
         //   graphicsDirectory: Script.resolvePath("./")
         // });
+    }
+
+    function shutdown() { // eslint-disable-line no-unused-vars
+        Controller.keyPressEvent.disconnect(keyPressEvent);
     }
 
     startup();
