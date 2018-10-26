@@ -14,7 +14,7 @@
 
     var isPolling = false;
     var allTeleportals = [];
-    var teleportalOverlays = [];
+    var teleportalOverlaysByHostname = {};
 
     function quasiGUID() {
         // From https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
@@ -88,10 +88,23 @@
         });
     }
 
+    function unrezAllTeleportals() {
+        for (var hostname in teleportalOverlaysByHostname) {
+            var overlays = teleportalOverlaysByHostname[hostname];
+            var length = overlays.length;
+            for (var i = 0; i < length; i++) {
+                if (i in overlays) {
+                    print(JSON.stringify(overlays[i]));
+                    Overlays.deleteOverlay(overlays[i]);
+                }
+            }
+        }
+    }
+
     function rezTeleportal() {
         var hostname = AddressManager.hostname;
-        teleportalOverlays[hostname] = teleportalOverlays[hostname] || [];
-        teleportalOverlays[hostname].push(
+        teleportalOverlaysByHostname[hostname] = teleportalOverlaysByHostname[hostname] || [];
+        teleportalOverlaysByHostname[hostname].push(
             Overlays.addOverlay(
                 "model", {
                     url: Script.resolvePath(MODEL_FBX),
@@ -174,6 +187,7 @@
                 case 'C':
                     Window.displayAnnouncement("Teleportals cleared.");
                     clearTeleportals();
+                    unrezAllTeleportals();
                     break;
             }
         }
