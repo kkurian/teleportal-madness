@@ -239,6 +239,7 @@
     }
 
     function startup() {
+        Script.scriptEnding.connect(shutdown);
         Controller.keyPressEvent.connect(keyPressEvent);
         isPolling = true;
         updateTeleportalsListUntilNotPolling();
@@ -253,6 +254,8 @@
     function shutdown() { // eslint-disable-line no-unused-vars
         isPolling = false;
         Controller.keyPressEvent.disconnect(keyPressEvent);
+        Script.scriptEnding.disconnect(shutdown);
+        unrezAllTeleportals();
     }
 
     startup();
