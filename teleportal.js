@@ -92,14 +92,14 @@
                     var document = {
                         ID: quasiGUID(),
                         USERNAME: Account.username,
-                        DOMAIN_0: AddressManager.hostname,
+                        HOSTNAME_0: AddressManager.hostname,
                         XYZ_0: MyAvatar.position,
                         CREATED_AT: now.toUTCString() };
                     print("Emplace first teleportal: ", JSON.stringify(document));
                     dbInsert(document);
                 } else if (1 === response.length) {
                     var fields = {
-                        DOMAIN_1: AddressManager.hostname,
+                        HOSTNAME_1: AddressManager.hostname,
                         XYZ_1: MyAvatar.position,
                         UPDATED_AT: now.toUTCString() };
                     print("Found incomplete pair: ", JSON.stringify(response[0]));
@@ -119,7 +119,7 @@
 
     function emplaceTeleportal() {
         dbSearch(
-            { USERNAME: Account.username, DOMAIN_1: null },
+            { USERNAME: Account.username, HOSTNAME_1: null },
             handleSearchResult);
     }
 
@@ -147,16 +147,16 @@
     }
 
     function updateTeleportalsListUntilNotPolling() {
-        var thisDomain = AddressManager.hostname;
+        var thisHostname = AddressManager.hostname;
         dbSearch(
-            { $or: [{ DOMAIN_0: thisDomain }, { DOMAIN_1: thisDomain }] },
+            { $or: [{ HOSTNAME_0: thisHostname }, { HOSTNAME_1: thisHostname }] },
             function (err, response) {
                 allTeleportals = response;
                 if (isPolling) {
                     Script.setTimeout(
                         updateTeleportalsListUntilNotPolling,
                         UPDATE_INTERVAL_MSEC);
-                    print("all teleportals in domain: ", JSON.stringify(allTeleportals));
+                    print("all teleportals in hostname: ", JSON.stringify(allTeleportals));
                 }
             }
         );
