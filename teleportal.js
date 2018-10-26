@@ -14,6 +14,7 @@
 
     var isPolling = false;
     var allTeleportals = [];
+    var allRezzedTeleportals = [];
     var teleportalOverlaysByHostname = {};
 
     function quasiGUID() {
@@ -101,7 +102,7 @@
         }
     }
 
-    function rezTeleportal() {
+    function rezTeleportal(guid, position) {
         var hostname = AddressManager.hostname;
         teleportalOverlaysByHostname[hostname] = teleportalOverlaysByHostname[hostname] || [];
         teleportalOverlaysByHostname[hostname].push(
@@ -110,12 +111,13 @@
                     url: Script.resolvePath(MODEL_FBX),
                     position: Vec3.sum(
                         MyAvatar.position,
-                        Vec3.multiplyQbyV(MyAvatar.orientation, { x: 0, y: 0, z: -6 })),
+                        Vec3.multiplyQbyV(MyAvatar.orientation, { x: 0, y: 0, z: -6})),
                     scale: MODEL_SCALE,
                     rotation: MyAvatar.orientation,
                     solid: true
                 }
             ));
+        allRezzedTeleportals.push(guid);
     }
 
     function createTeleportalA() {
@@ -130,7 +132,7 @@
             CREATED_AT_0: now.toUTCString() };
         print("Emplace first teleportal: ", JSON.stringify(document));
         dbInsert(document);
-        rezTeleportal();
+        rezTeleportal(guid, position);
     }
 
     function createTeleportalB(response) {
@@ -145,7 +147,7 @@
         print("Found incomplete pair: ", JSON.stringify(response[0]));
         print("Emplace second teleportal: ", JSON.stringify(fields));
         dbUpdate(response[0]._id, fields);
-        rezTeleportal();
+        rezTeleportal(guid, position);
     }
 
     function finishEmplaceTeleportal(err, response) {
