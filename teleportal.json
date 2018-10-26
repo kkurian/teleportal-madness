@@ -1,0 +1,95 @@
+{
+    "DataVersion": 0,
+    "Entities": [
+        {
+            "animation": {
+                "currentFrame": 197.62863159179688,
+                "fps": 70,
+                "lastFrame": 358,
+                "running": true,
+                "url": "https://github.com/avatardz/reoiz/blob/master/mPortalFrame_5.fbx?raw=true"
+            },
+            "clientOnly": false,
+            "created": "2018-10-24T17:49:23Z",
+            "dimensions": {
+                "blue": 2.3979408740997314,
+                "green": 3.6765849590301514,
+                "red": 3.457179546356201,
+                "x": 3.457179546356201,
+                "y": 3.6765849590301514,
+                "z": 2.3979408740997314
+            },
+            "id": "{e7084bca-5328-40f7-8cc3-40df418e9a07}",
+            "lastEdited": 1540403274485992,
+            "lastEditedBy": "{48fcca1d-57ab-4c91-9c1e-7b74990a4ccb}",
+            "modelURL": "https://github.com/avatardz/reoiz/blob/master/mPortalFrame_5.fbx?raw=true",
+            "owningAvatarID": "{00000000-0000-0000-0000-000000000000}",
+            "position": {
+                "blue": 0.3798828125,
+                "green": 0,
+                "red": 0.12109375,
+                "x": 0.12109375,
+                "y": 0,
+                "z": 0.3798828125
+            },
+            "queryAACube": {
+                "scale": 5.587440013885498,
+                "x": -2.672626256942749,
+                "y": -2.793720006942749,
+                "z": -2.413837194442749
+            },
+            "rotation": {
+                "w": -0.5194934010505676,
+                "x": 4.57763671875e-05,
+                "y": -0.8544899821281433,
+                "z": 4.57763671875e-05
+            },
+            "shapeType": "static-mesh",
+            "textures": "{\n    \"file12\": \"https://github.com/avatardz/reoiz/blob/master/mPortalFrame_5.fbx?raw=true/mPortalFrame_painter/mPortalFrame-withBack_2_frame_PBS_BaseColor.png\",\n    \"file13\": \"https://github.com/avatardz/reoiz/blob/master/mPortalFrame_5.fbx?raw=true/mPortalFrame_painter/mPortalFrame-withBack_2_frame_PBS_Normal.png\",\n    \"file14\": \"https://github.com/avatardz/reoiz/blob/master/mPortalFrame_5.fbx?raw=true/mPortalFrame_painter/mPortalFrame-withBack_2_frame_PBS_Metallic.png\",\n    \"file15\": \"https://github.com/avatardz/reoiz/blob/master/mPortalFrame_5.fbx?raw=true/mPortalFrame_painter/mPortalFrame-withBack_2_frame_PBS_Roughness.png\",\n    \"portal_base\": \"https://github.com/avatardz/reoiz/blob/master/_portalSigns/portalImage_morty.png?raw=true\",\n    \"portal_inca\": \"https://github.com/avatardz/reoiz/blob/master/_portalSigns/portalImage_morty.png?raw=true\"\n}",
+            "type": "Model",
+            "userData": "{\"grabbableKey\":{\"grabbable\":false}}"
+        },
+        {
+            "clientOnly": false,
+            "created": "2018-10-24T17:49:23Z",
+            "dimensions": {
+                "blue": 0.2140764594078064,
+                "green": 0.777694582939148,
+                "red": 3.0202555656433105,
+                "x": 3.0202555656433105,
+                "y": 0.777694582939148,
+                "z": 0.2140764594078064
+            },
+            "id": "{804743ca-68c2-4bfa-8713-a083324b0f55}",
+            "lastEdited": 1540403274165328,
+            "lastEditedBy": "{48fcca1d-57ab-4c91-9c1e-7b74990a4ccb}",
+            "modelURL": "https://github.com/avatardz/reoiz/blob/master/morSign.fbx?raw=true",
+            "owningAvatarID": "{00000000-0000-0000-0000-000000000000}",
+            "position": {
+                "blue": 0,
+                "green": 1.876953125,
+                "red": 0,
+                "x": 0,
+                "y": 1.876953125,
+                "z": 0
+            },
+            "queryAACube": {
+                "scale": 3.126112699508667,
+                "x": -1.5630563497543335,
+                "y": 0.3138967752456665,
+                "z": -1.5630563497543335
+            },
+            "rotation": {
+                "w": -0.8586099147796631,
+                "x": 0.14143586158752441,
+                "y": 0.4763408899307251,
+                "z": -0.1262378692626953
+            },
+            "type": "Model",
+            "userData": "{\"grabbableKey\":{\"grabbable\":true}}",
+            "visible": false
+        }
+    ],
+    "Id": "{34f9ce74-58cd-4c30-acf8-b00622cc9e91}",
+    "Version": 93
+}

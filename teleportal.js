@@ -6,12 +6,15 @@
     var request = Script.require('request').request;
 
     var ACTIVATION_RADIUS_M = 0.5;
+    var MODEL_FBX = "teleportal.fbx";
+    var MODEL_SCALE = { x: 1, y: 1, z: 1 };
     var RESTDB_API_KEY = { 'x-apikey': '5bd33229cb62286429f4ee76' };
     var RESTDB_BASE_URL = 'https://teleportal-66ab.restdb.io/rest/teleportals';
     var UPDATE_INTERVAL_MSEC = 1000;
 
     var isPolling = false;
     var allTeleportals = [];
+    var teleportalOverlays = [];
 
     function quasiGUID() {
         // From https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
@@ -85,28 +88,56 @@
         });
     }
 
-    function handleSearchResult(err, response) {
+    function rezTeleportal() {
+        var hostname = AddressManager.hostname;
+        teleportalOverlays[hostname] = teleportalOverlays[hostname] || [];
+        teleportalOverlays[hostname].push(
+            Overlays.addOverlay(
+                "model", {
+                    url: Script.resolvePath(MODEL_FBX),
+                    position: Vec3.sum(
+                        MyAvatar.position,
+                        Vec3.multiplyQbyV(MyAvatar.orientation, { x: 0, y: 0, z: -6 })),
+                    scale: MODEL_SCALE,
+                    rotation: MyAvatar.orientation,
+                    solid: true
+                }
+            ));
+    }
+
+    function createTeleportalA() {
+        var now = new Date();
+        var document = {
+            ID: quasiGUID(),
+            USERNAME: Account.username,
+            HOSTNAME_0: AddressManager.hostname,
+            XYZ_0: MyAvatar.position,
+            CREATED_AT: now.toUTCString() };
+        print("Emplace first teleportal: ", JSON.stringify(document));
+        dbInsert(document);
+        rezTeleportal();
+    }
+
+    function createTeleportalB(response) {
+        var now = new Date();
+        var fields = {
+            HOSTNAME_1: AddressManager.hostname,
+            XYZ_1: MyAvatar.position,
+            UPDATED_AT: now.toUTCString() };
+        print("Found incomplete pair: ", JSON.stringify(response[0]));
+        print("Emplace second teleportal: ", JSON.stringify(fields));
+        dbUpdate(response[0]._id, fields);
+        rezTeleportal();
+    }
+
+    function finishEmplaceTeleportal(err, response) {
         print("Search response: ", JSON.stringify(response));
         if (response) {
-            var now = new Date();
             if (!err) {
                 if (0 === response.length) {
-                    var document = {
-                        ID: quasiGUID(),
-                        USERNAME: Account.username,
-                        HOSTNAME_0: AddressManager.hostname,
-                        XYZ_0: MyAvatar.position,
-                        CREATED_AT: now.toUTCString() };
-                    print("Emplace first teleportal: ", JSON.stringify(document));
-                    dbInsert(document);
+                    createTeleportalA();
                 } else if (1 === response.length) {
-                    var fields = {
-                        HOSTNAME_1: AddressManager.hostname,
-                        XYZ_1: MyAvatar.position,
-                        UPDATED_AT: now.toUTCString() };
-                    print("Found incomplete pair: ", JSON.stringify(response[0]));
-                    print("Emplace second teleportal: ", JSON.stringify(fields));
-                    dbUpdate(response[0]._id, fields);
+                    createTeleportalB(response);
                 } else {
                     print("Unexpected response: ", JSON.stringify(response));
                     print("Corresponding error: ", JSON.stringify(err));
@@ -122,7 +153,7 @@
     function emplaceTeleportal() {
         dbSearch(
             { USERNAME: Account.username, HOSTNAME_1: null },
-            handleSearchResult);
+            finishEmplaceTeleportal);
     }
 
     function clearTeleportals() {
@@ -148,17 +179,8 @@
         }
     }
 
-    function xyzDistance(a, b) {
-        var result = Math.sqrt(
-            Math.pow(a.x - b.x, 2) +
-            Math.pow(a.y - b.y, 2) +
-            Math.pow(a.z - b.z, 2));
-        print("distance: " + result);
-        return result;
-    }
-
     function inRange(xyz) {
-        return ACTIVATION_RADIUS_M >= xyzDistance(MyAvatar.position, xyz);
+        return ACTIVATION_RADIUS_M >= Vec3.distance(MyAvatar.position, xyz);
     }
 
     function uri(hostname, xyz) {
