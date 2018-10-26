@@ -6,10 +6,10 @@
     var request = Script.require('request').request;
     var DB_BASE_URL = 'https://teleportal-66ab.restdb.io/rest/teleportals';
     var RESTDB_API_KEY = { 'x-apikey': '5bd33229cb62286429f4ee76' };
-    var RETRY_DELAY_MSEC = 1000;
+    var UPDATE_INTERVAL_MSEC = 1000;
 
-    // function onOpened() {
-    // }
+    var isPolling = false;
+    var allTeleportals = [];
 
     function quasiGUID() {
         // From https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
@@ -145,8 +145,27 @@
         }
     }
 
+    function updateTeleportalsListUntilNotPolling() {
+        var thisDomain = AddressManager.domainID;
+        dbSearch(
+            { $or: [{ DOMAIN_0: thisDomain }, { DOMAIN_1: thisDomain }] },
+            function (err, response) {
+                allTeleportals = response;
+                if (isPolling) {
+                    Script.setTimeout(
+                        updateTeleportalsListUntilNotPolling,
+                        UPDATE_INTERVAL_MSEC);
+                    print("all teleportals in domain: ", JSON.stringify(allTeleportals));
+                }
+            }
+        );
+    }
+
     function startup() {
         Controller.keyPressEvent.connect(keyPressEvent);
+        isPolling = true;
+        updateTeleportalsListUntilNotPolling();
+
         // ui = new AppUi({
         //   buttonName: "Teleportal Madness",
         //   home: Script.resolvePath("teleportal.html"),
@@ -155,6 +174,7 @@
     }
 
     function shutdown() { // eslint-disable-line no-unused-vars
+        isPolling = false;
         Controller.keyPressEvent.disconnect(keyPressEvent);
     }
 
