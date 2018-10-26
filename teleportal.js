@@ -135,10 +135,11 @@
             print("actual:", actual);
             switch (actual) {
                 case 'T':
-                    print("emplace teleportal");
+                    Window.displayAnnouncement("Teleportal emplaced.");
                     emplaceTeleportal();
                     break;
                 case 'C':
+                    Window.displayAnnouncement("Teleportals cleared.");
                     clearTeleportals();
                     break;
             }
