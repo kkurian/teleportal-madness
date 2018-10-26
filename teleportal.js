@@ -4,6 +4,8 @@
 (function () { // BEGIN LOCAL SCOPE
     // var AppUi = Script.require('appUi');
     var request = Script.require('request').request;
+
+    var ACTIVATION_RADIUS_M = 0.5;
     var RESTDB_API_KEY = { 'x-apikey': '5bd33229cb62286429f4ee76' };
     var RESTDB_BASE_URL = 'https://teleportal-66ab.restdb.io/rest/teleportals';
     var UPDATE_INTERVAL_MSEC = 1000;
@@ -146,12 +148,50 @@
         }
     }
 
+    function xyzDistance(a, b) {
+        var result = Math.sqrt(
+            Math.pow(a.x - b.x, 2) +
+            Math.pow(a.y - b.y, 2) +
+            Math.pow(a.z - b.z, 2));
+        print("distance: " + result);
+        return result;
+    }
+
+    function inRange(xyz) {
+        return ACTIVATION_RADIUS_M >= xyzDistance(MyAvatar.position, xyz);
+    }
+
+    function uri(hostname, xyz) {
+        return "hifi://" + hostname + '/' + xyz.x + "," + xyz.y + "," + xyz.z;
+    }
+
+    function teleport(hostname, xyz) {
+        Window.displayAnnouncement("Teleporting to " + uri(hostname, xyz));
+    }
+
+    function energize() {
+        var hostname = AddressManager.hostname;
+        for (var i = 0; i < allTeleportals.length; i++) {
+            if (i in allTeleportals) {
+                var teleportal = allTeleportals[i];
+                if (hostname === teleportal.HOSTNAME_0 && inRange(teleportal.XYZ_0)) {
+                    teleport(teleportal.HOSTNAME_0, teleportal.XYZ_0);
+                    break;
+                } else if (hostname === teleportal.HOSTNAME_1 && inRange(teleportal.XYZ_1)) {
+                    teleport(teleportal.HOSTNAME_1, teleportal.XYZ_1);
+                    break;
+                }
+            }
+        }
+    }
+
     function updateTeleportalsListUntilNotPolling() {
         var thisHostname = AddressManager.hostname;
         dbSearch(
             { $or: [{ HOSTNAME_0: thisHostname }, { HOSTNAME_1: thisHostname }] },
             function (err, response) {
                 allTeleportals = response;
+                energize();
                 if (isPolling) {
                     Script.setTimeout(
                         updateTeleportalsListUntilNotPolling,
