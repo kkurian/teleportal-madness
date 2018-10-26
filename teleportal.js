@@ -14,7 +14,7 @@
 
     var isPolling = false;
     var allTeleportals = [];
-    var allRezzedTeleportals = [];
+    var allOverlayedTeleportals = [];
     var teleportalOverlaysByHostname = {};
 
     function quasiGUID() {
@@ -102,7 +102,7 @@
         }
     }
 
-    function rezTeleportal(guid, position) {
+    function overlayTeleportal(guid, position) {
         var hostname = AddressManager.hostname;
         teleportalOverlaysByHostname[hostname] = teleportalOverlaysByHostname[hostname] || [];
         teleportalOverlaysByHostname[hostname].push(
@@ -117,7 +117,7 @@
                     solid: true
                 }
             ));
-        allRezzedTeleportals.push(guid);
+        allOverlayedTeleportals.push(guid);
     }
 
     function createTeleportalA() {
@@ -132,7 +132,7 @@
             CREATED_AT_0: now.toUTCString() };
         print("Emplace first teleportal: ", JSON.stringify(document));
         dbInsert(document);
-        rezTeleportal(guid, position);
+        overlayTeleportal(guid, position);
     }
 
     function createTeleportalB(response) {
@@ -147,7 +147,7 @@
         print("Found incomplete pair: ", JSON.stringify(response[0]));
         print("Emplace second teleportal: ", JSON.stringify(fields));
         dbUpdate(response[0]._id, fields);
-        rezTeleportal(guid, position);
+        overlayTeleportal(guid, position);
     }
 
     function finishEmplaceTeleportal(err, response) {
@@ -185,7 +185,6 @@
         if (Account.username !== 'Unknown user') {
             var actual = String.fromCharCode(key.key);
             actual = key.isShifted ? actual : actual.toLowerCase();
-            print("actual:", actual);
             switch (actual) {
                 case 'T':
                     Window.displayAnnouncement("Teleportal emplaced.");
@@ -228,18 +227,36 @@
         }
     }
 
+    function ensureTeleportalIsOverlayed(guid, position) {
+        if (guid && -1 === allOverlayedTeleportals.indexOf(guid)) {
+            overlayTeleportal(guid, position);
+        }
+    }
+
+    function ensureTeleportalsAreOverlayed() {
+        var length = allTeleportals.length;
+        for (var i = 0; i < length; i++) {
+            if (i in allTeleportals) {
+                var teleportal = allTeleportals[i];
+                ensureTeleportalIsOverlayed(teleportal.ID_0, teleportal.XYZ_0);
+                ensureTeleportalIsOverlayed(teleportal.ID_1, teleportal.XYZ_1);
+            }
+        }
+    }
+
     function updateTeleportalsListUntilNotPolling() {
         var thisHostname = AddressManager.hostname;
         dbSearch(
             { $or: [{ HOSTNAME_0: thisHostname }, { HOSTNAME_1: thisHostname }] },
             function (err, response) {
                 allTeleportals = response;
+                ensureTeleportalsAreOverlayed();
                 energize();
                 if (isPolling) {
                     Script.setTimeout(
                         updateTeleportalsListUntilNotPolling,
                         UPDATE_INTERVAL_MSEC);
-                    print("all teleportals in hostname: ", JSON.stringify(allTeleportals));
+                    print("all teleportals here: ", JSON.stringify(allTeleportals));
                 }
             }
         );
