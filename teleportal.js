@@ -13,9 +13,10 @@
     var TELEPORTION_DESTINATION_OFFSET = { x: 0, y: 0, z: 4 };
     var UPDATE_INTERVAL_MSEC = 1000;
 
-    var isPolling = false;
-    var allTeleportals = [];
     var allOverlayedTeleportals = [];
+    var allTeleportals = [];
+    var isPolling = false;
+    var isRouletteMode = false;
     var teleportalOverlaysByHostname = {};
 
     function quasiGUID() {
@@ -200,6 +201,11 @@
                     clearTeleportals();
                     unoverlayAllTeleportals();
                     break;
+                case 'R':
+                    isRouletteMode = !isRouletteMode;
+                    var state = isRouletteMode ? 'enabled' : 'disabled';
+                    Window.displayAnnouncement('Teleportal roulette ' + state);
+                    break;
             }
         }
     }
@@ -222,16 +228,40 @@
                     TELEPORTION_DESTINATION_OFFSET)));
     }
 
+    function teleportAtRandom() {
+        request({
+            uri: RESTDB_BASE_URL,
+            method: 'GET',
+            headers: RESTDB_API_KEY
+        }, function (err, result) {
+            print("Big result ", JSON.stringify(result));
+            var teleportal = result[Math.floor(Math.random() * result.length)];
+            if (Math.floor(Math.random() * 2)) {
+                teleport(teleportal.HOSTNAME_0, teleportal.XYZ_0);
+            } else {
+                teleport(teleportal.HOSTNAME_1, teleportal.XYZ_1);
+            }
+        });
+    }
+
     function energize() {
         var hostname = AddressManager.hostname;
         for (var i = 0; i < allTeleportals.length; i++) {
             if (i in allTeleportals) {
                 var teleportal = allTeleportals[i];
                 if (hostname === teleportal.HOSTNAME_0 && inRange(teleportal.XYZ_0)) {
-                    teleport(teleportal.HOSTNAME_1, teleportal.XYZ_1);
+                    if (isRouletteMode) {
+                        teleportAtRandom();
+                    } else {
+                        teleport(teleportal.HOSTNAME_1, teleportal.XYZ_1);
+                    }
                     break;
                 } else if (hostname === teleportal.HOSTNAME_1 && inRange(teleportal.XYZ_1)) {
-                    teleport(teleportal.HOSTNAME_0, teleportal.XYZ_0);
+                    if (isRouletteMode) {
+                        teleportAtRandom();
+                    } else {
+                        teleport(teleportal.HOSTNAME_0, teleportal.XYZ_0);
+                    }
                     break;
                 }
             }
