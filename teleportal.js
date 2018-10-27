@@ -5,7 +5,7 @@
     // var AppUi = Script.require('appUi');
     var request = Script.require('request').request;
 
-    var ACTIVATION_RADIUS_M = 0.5;
+    var ACTIVATION_RADIUS_M = 1.0;
     var MODEL_FBX = "teleportal.fbx";
     var MODEL_SCALE = { x: 1, y: 1, z: 1 };
     var RESTDB_API_KEY = { 'x-apikey': '5bd33229cb62286429f4ee76' };
