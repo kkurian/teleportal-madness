@@ -221,10 +221,10 @@
             if (i in allTeleportals) {
                 var teleportal = allTeleportals[i];
                 if (hostname === teleportal.HOSTNAME_0 && inRange(teleportal.XYZ_0)) {
-                    teleport(teleportal.HOSTNAME_0, teleportal.XYZ_0);
+                    teleport(teleportal.HOSTNAME_1, teleportal.XYZ_1);
                     break;
                 } else if (hostname === teleportal.HOSTNAME_1 && inRange(teleportal.XYZ_1)) {
-                    teleport(teleportal.HOSTNAME_1, teleportal.XYZ_1);
+                    teleport(teleportal.HOSTNAME_0, teleportal.XYZ_0);
                     break;
                 }
             }
