@@ -10,6 +10,7 @@
     var MODEL_SCALE = { x: 1, y: 1, z: 1 };
     var RESTDB_API_KEY = { 'x-apikey': '5bd33229cb62286429f4ee76' };
     var RESTDB_BASE_URL = 'https://teleportal-66ab.restdb.io/rest/teleportals';
+    var TELEPORTION_DESTINATION_OFFSET = { x: 0, y: 0, z: 4 };
     var UPDATE_INTERVAL_MSEC = 1000;
 
     var isPolling = false;
@@ -212,8 +213,13 @@
     }
 
     function teleport(hostname, xyz) {
-        Window.displayAnnouncement("Teleporting to " + uri(hostname, xyz));
-        Window.location = uri(hostname, xyz);
+        Window.location = uri(
+            hostname,
+            Vec3.sum(
+                xyz,
+                Vec3.multiplyQbyV(
+                    MyAvatar.orientation,
+                    TELEPORTION_DESTINATION_OFFSET)));
     }
 
     function energize() {
