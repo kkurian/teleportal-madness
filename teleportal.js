@@ -213,6 +213,7 @@
 
     function teleport(hostname, xyz) {
         Window.displayAnnouncement("Teleporting to " + uri(hostname, xyz));
+        Window.location = uri(hostname, xyz);
     }
 
     function energize() {
