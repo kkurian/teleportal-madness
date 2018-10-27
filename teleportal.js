@@ -89,7 +89,7 @@
         });
     }
 
-    function unrezAllTeleportals() {
+    function unoverlayAllTeleportals() {
         for (var hostname in teleportalOverlaysByHostname) {
             var overlays = teleportalOverlaysByHostname[hostname];
             var length = overlays.length;
@@ -109,9 +109,7 @@
             Overlays.addOverlay(
                 "model", {
                     url: Script.resolvePath(MODEL_FBX),
-                    position: Vec3.sum(
-                        MyAvatar.position,
-                        Vec3.multiplyQbyV(MyAvatar.orientation, { x: 0, y: 0, z: -6})),
+                    position: position,
                     scale: MODEL_SCALE,
                     rotation: MyAvatar.orientation,
                     solid: true
@@ -120,10 +118,16 @@
         allOverlayedTeleportals.push(guid);
     }
 
+    function newOverlayPosition() {
+        return Vec3.sum(
+            MyAvatar.position,
+            Vec3.multiplyQbyV(MyAvatar.orientation, { x: 0, y: 0, z: -6}));
+    }
+
     function createTeleportalA() {
         var now = new Date();
         var guid = quasiGUID();
-        var position = MyAvatar.position;
+        var position = newOverlayPosition();
         var document = {
             ID_0: guid,
             USERNAME: Account.username,
@@ -138,7 +142,7 @@
     function createTeleportalB(response) {
         var now = new Date();
         var guid = quasiGUID();
-        var position = MyAvatar.position;
+        var position = newOverlayPosition();
         var fields = {
             ID_1: guid,
             HOSTNAME_1: AddressManager.hostname,
@@ -193,7 +197,7 @@
                 case 'C':
                     Window.displayAnnouncement("Teleportals cleared.");
                     clearTeleportals();
-                    unrezAllTeleportals();
+                    unoverlayAllTeleportals();
                     break;
             }
         }
@@ -279,7 +283,7 @@
         isPolling = false;
         Controller.keyPressEvent.disconnect(keyPressEvent);
         Script.scriptEnding.disconnect(shutdown);
-        unrezAllTeleportals();
+        unoverlayAllTeleportals();
     }
 
     startup();
