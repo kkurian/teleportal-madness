@@ -147,6 +147,7 @@
                     url: Script.resolvePath(FBX_ACTIVE),
                     animationSettings: overlayAnimationSettings(FBX_ACTIVE) }
             );
+            instaportOverlay.instaport = instaport;
         }
     }
 
