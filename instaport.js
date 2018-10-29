@@ -28,7 +28,8 @@
     var RESTDB_API_KEY = { 'x-apikey': '5bd33229cb62286429f4ee76' };
     var RESTDB_BASE_URL = 'https://teleportal-66ab.restdb.io/rest/teleportals';
     var SOUND_TELEPORT = "./teleport.wav";
-    var SOUND_CREATE =  "./create.wav";
+    var SOUND_CREATE = "./create.wav";
+    var SOUND_ROULETTE = "./roulette.wav";
     var SOUND_DELAY_MSEC = 100;
     var TELEPORTION_DESTINATION_OFFSET = { x: 0, y: 0, z: -2 };
     var UPDATE_INTERVAL_MSEC = 750;
@@ -269,6 +270,15 @@
         }
     }
 
+    function toggleRoulette() {
+        isRouletteMode = !isRouletteMode;
+        var state = isRouletteMode ? 'enabled' : 'disabled';
+        if (isRouletteMode) {
+            playSound(SOUND_TELEPORT, MyAvatar.position);
+        }
+        Window.displayAnnouncement('Instaport roulette ' + state);
+    }
+
     function keyPressEvent(key) {
         // TODO: Do something informative if the user is not logged in.
         if (Account.username !== 'Unknown user') {
@@ -282,9 +292,7 @@
                     deleteThisUsersInstaports();
                     break;
                 case 'R':
-                    isRouletteMode = !isRouletteMode;
-                    var state = isRouletteMode ? 'enabled' : 'disabled';
-                    Window.displayAnnouncement('Instaport roulette ' + state);
+                    toggleRoulette();
                     break;
             }
         }
@@ -464,9 +472,7 @@
                     dbDeleteAllInstaportsForUser(Account.username);
                     break;
                 case 'portalRoulette':
-                    isRouletteMode = !isRouletteMode;
-                    var state = isRouletteMode ? 'enabled' : 'disabled';
-                    Window.displayAnnouncement('Instaport roulette ' + state);
+                    toggleRoulette();
                     break;
             }
         }
@@ -493,6 +499,7 @@
         isRunning = true;
         SoundCache.prefetch(SOUND_CREATE);
         SoundCache.prefetch(SOUND_TELEPORT);
+        SoundCache.prefetch(SOUND_ROULETTE);
         Script.scriptEnding.connect(shutdown);
         updateInstaportsListUntilNotPolling();
         periodiallyEnergizeUntilNotPolling();
