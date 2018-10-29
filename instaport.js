@@ -27,9 +27,10 @@
     var RESTDB_API_KEY = { 'x-apikey': '5bd33229cb62286429f4ee76' };
     var RESTDB_BASE_URL = 'https://teleportal-66ab.restdb.io/rest/teleportals';
     var TELEPORTION_DESTINATION_OFFSET = { x: 0, y: 0, z: -2 };
-    var UPDATE_INTERVAL_MSEC = 1000;
+    var UPDATE_INTERVAL_MSEC = 750;
+    var ENERGIZE_INTERVAL_MSEC = 100;
 
-    var isPolling = false;
+    var isRunning = false;
     var isRouletteMode = false;
     var instaportOverlaysByHostname = {};
 
@@ -395,14 +396,22 @@
             function (err, response) {
                 ensureOldInstaportsAreUnoverlayed(hostname, response);
                 ensureInstaportsAreOverlayed(hostname, response);
-                energize();
-                if (isPolling) {
+                if (isRunning) {
                     Script.setTimeout(
                         updateInstaportsListUntilNotPolling,
                         UPDATE_INTERVAL_MSEC);
                 }
             }
         );
+    }
+
+    function periodiallyEnergizeUntilNotPolling() {
+        if (isRunning) {
+            energize();
+            Script.setTimeout(
+                periodiallyEnergizeUntilNotPolling,
+                ENERGIZE_INTERVAL_MSEC);
+        }
     }
 
     // Handle the events we're recieving from the web UI
@@ -445,16 +454,17 @@
     }
 
     function startup() {
-        isPolling = true;
+        isRunning = true;
         Script.scriptEnding.connect(shutdown);
         updateInstaportsListUntilNotPolling();
+        periodiallyEnergizeUntilNotPolling();
         Controller.keyPressEvent.connect(keyPressEvent);
         tablet.webEventReceived.connect(onWebEventReceived);
         createTabletButton();
     }
 
     function shutdown() { // eslint-disable-line no-unused-vars
-        isPolling = false;
+        isRunning = false;
         destroyTabletButton();
         Controller.keyPressEvent.disconnect(keyPressEvent);
         Script.scriptEnding.disconnect(shutdown);
