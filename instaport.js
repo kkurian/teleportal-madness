@@ -154,7 +154,6 @@
     }
 
     function overlayInstaport(instaport, instaportId) {
-        print("!!! overlay ", JSON.stringify(instaport), instaportId);
         var hostname = instaportHostname(instaport, instaportId);
         var position = instaportPosition(instaport, instaportId);
         var fbx = (instaport.ID_0 && instaport.ID_1) ? FBX_ACTIVE : FBX_INACTIVE;
@@ -297,7 +296,6 @@
             method: 'GET',
             headers: RESTDB_API_KEY
         }, function (err, result) {
-            print("Big result ", JSON.stringify(result));
             var instaport = result[Math.floor(Math.random() * result.length)];
             if (Math.floor(Math.random() * 2)) {
                 materialize(instaport.HOSTNAME_0, instaport.XYZ_0);
