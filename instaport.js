@@ -36,6 +36,7 @@
     var isRunning = false;
     var isRouletteMode = false;
     var instaportOverlaysByHostname = {};
+    var lastHostname = AddressManager.hostname;
 
     function quasiGUID() {
         // From https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
@@ -162,6 +163,11 @@
 
     function overlayInstaport(instaport, instaportId) {
         var hostname = instaportHostname(instaport, instaportId);
+        if (hostname !== AddressManager.hostname) {
+            // Cannot overlay that instaport in this domain. The user
+            // changed domains while we were processing overlay updates.
+            return;
+        }
         var position = instaportPosition(instaport, instaportId);
         var fbx = (instaport.ID_0 && instaport.ID_1) ? FBX_ACTIVE : FBX_INACTIVE;
         instaportOverlaysByHostname[hostname] = instaportOverlaysByHostname[hostname] || {};
@@ -415,7 +421,12 @@
         dbSearch(
             { $or: [{ HOSTNAME_0: hostname }, { HOSTNAME_1: hostname }] },
             function (err, response) {
-                ensureOldInstaportsAreUnoverlayed(hostname, response);
+                if (lastHostname !== hostname) {
+                    unoverlayAllInstaports();
+                    lastHostname = hostname;
+                } else {
+                    ensureOldInstaportsAreUnoverlayed(hostname, response);
+                }
                 ensureInstaportsAreOverlayed(hostname, response);
                 if (isRunning) {
                     Script.setTimeout(
