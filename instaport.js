@@ -29,7 +29,6 @@
     var TELEPORTION_DESTINATION_OFFSET = { x: 0, y: 0, z: -2 };
     var UPDATE_INTERVAL_MSEC = 1000;
 
-    var allOverlayedInstaports = [];
     var allInstaports = [];
     var isPolling = false;
     var isRouletteMode = false;
@@ -107,34 +106,39 @@
         });
     }
 
-    function unoverlayAllInstaports() {
-        for (var hostname in instaportOverlaysByHostname) {
-            var overlays = instaportOverlaysByHostname[hostname];
-            var length = overlays.length;
-            for (var i = 0; i < length; i++) {
-                if (i in overlays) {
-                    print(JSON.stringify(overlays[i]));
-                    Overlays.deleteOverlay(overlays[i]);
-                }
-            }
-        }
+    function unoverlayInstaport() {
+
     }
 
-    function overlayInstaport(guid, position) {
-        var hostname = AddressManager.hostname;
-        instaportOverlaysByHostname[hostname] = instaportOverlaysByHostname[hostname] || [];
-        instaportOverlaysByHostname[hostname].push(
-            Overlays.addOverlay(
-                "model", {
-                    url: Script.resolvePath(MODEL_FBX),
-                    animationSettings: {url: ANIM_FBX,fps: 40,firstFrame: 0,lastFrame: 180,loop: true,running: true},
-                    position: position,
-                    scale: MODEL_SCALE,
-                    rotation: MyAvatar.orientation,
-                    solid: true
-                }
-            ));
-        allOverlayedInstaports.push(guid);
+    function unoverlayAllInstaports() {
+        Object.keys(instaportOverlaysByHostname).forEach(function(hostname) {
+            var instaportOverlays = instaportOverlaysByHostname[hostname];
+            Object.keys(instaportOverlays).forEach(function(instaport) {
+                Overlays.deleteOverlay(instaportOverlays[instaport]);
+            });
+        });
+        instaportOverlaysByHostname = {};
+    }
+
+    function overlayInstaport(guid, position, hostname) {
+        instaportOverlaysByHostname[hostname] = instaportOverlaysByHostname[hostname] || {};
+        instaportOverlaysByHostname[hostname][guid] = Overlays.addOverlay(
+            "model", {
+                url: Script.resolvePath(MODEL_FBX),
+                animationSettings: {
+                    url: ANIM_FBX,
+                    fps: 40,
+                    firstFrame: 0,
+                    lastFrame: 180,
+                    loop: true,
+                    running: true
+                },
+                position: position,
+                scale: MODEL_SCALE,
+                rotation: MyAvatar.orientation,
+                solid: true
+            }
+        );
     }
 
     function newOverlayPosition() {
@@ -144,33 +148,40 @@
     }
 
     function createInstaportA() {
-        var now = new Date();
         var guid = quasiGUID();
+        var hostname = AddressManager.hostname;
+        var now = new Date();
         var position = newOverlayPosition();
         var document = {
             ID_0: guid,
             USERNAME: Account.username,
-            HOSTNAME_0: AddressManager.hostname,
+            HOSTNAME_0: hostname,
             XYZ_0: position,
             CREATED_AT_0: now.toUTCString() };
         print("Emplace first instaport: ", JSON.stringify(document));
+        // Not strictly necessary but makes the instaport appear more
+        // rapidly for the local user than waiting for the db update to
+        // round-trip.
+        overlayInstaport(guid, position, hostname);
         dbInsert(document);
-        overlayInstaport(guid, position);
     }
 
     function createInstaportB(response) {
-        var now = new Date();
         var guid = quasiGUID();
+        var hostname = AddressManager.hostname;
+        var now = new Date();
         var position = newOverlayPosition();
         var fields = {
             ID_1: guid,
-            HOSTNAME_1: AddressManager.hostname,
+            HOSTNAME_1: hostname,
             XYZ_1: position,
             CREATED_AT_1: now.toUTCString() };
         print("Found incomplete pair: ", JSON.stringify(response[0]));
         print("Emplace second instaport: ", JSON.stringify(fields));
+        // Not strictly necessary but makes the instaport appear more
+        // rapidly than waiting for the db update to round-trip.
+        overlayInstaport(guid, position, hostname);
         dbUpdate(response[0]._id, fields);
-        overlayInstaport(guid, position);
     }
 
     function finishEmplaceInstaport(err, response) {
@@ -301,14 +312,13 @@
     }
 
     function ensureInstaportIsOverlayed(guid, position, hostname) {
-        if (guid && -1 === allOverlayedInstaports.indexOf(guid)) {
+        var overlaysHere = instaportOverlaysByHostname[hostname];
+        if (!(overlaysHere && guid in overlaysHere)) {
             overlayInstaport(guid, position, hostname);
         }
     }
 
-    function ensureInstaportsAreOverlayed() {
-        var hostname = AddressManager.hostname;
-        var length = allInstaports.length;
+    function ensureInstaportsAreOverlayed(hostname) {
         for (var i = 0; i < length; i++) {
             if (i in allInstaports) {
                 var instaport = allInstaports[i];
@@ -323,12 +333,12 @@
     }
 
     function updateInstaportsListUntilNotPolling() {
-        var thisHostname = AddressManager.hostname;
+        var hostname = AddressManager.hostname;
         dbSearch(
-            { $or: [{ HOSTNAME_0: thisHostname }, { HOSTNAME_1: thisHostname }] },
+            { $or: [{ HOSTNAME_0: hostname }, { HOSTNAME_1: hostname }] },
             function (err, response) {
                 allInstaports = response;
-                ensureInstaportsAreOverlayed();
+                ensureInstaportsAreOverlayed(hostname);
                 energize();
                 if (isPolling) {
                     Script.setTimeout(
