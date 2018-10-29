@@ -1,99 +1,30 @@
 "use strict";
 
 //
-//  gemstoneMagicMaker.js
-//  tablet-sample-app
+//  instaport.js
 //
-//  Created by Faye Li on Feb 6 2017.
-//  Copyright 2017 High Fidelity, Inc.
+//  Created by Kerry Ivan Kurian on 26 OCT 2018
+//  Copyright 2018 High Fidelity, Inc.
 //
 //  Distributed under the Apache License, Version 2.0.
 //  See the accompanying file LICENSE or http://www.apache.org/licenses/LICENSE-2.0.html
 //
 
+/* global AddressManager */
 (function() {
-	// Every great app starts with a great name (keep it short so that it can fit in the tablet button)
-	var APP_NAME = "INSTAPORT";
-	// Link to your app's HTML file
-	var APP_URL = "http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalDropper.html?622222221";
-    // Path to the icon art for your app
     var APP_ICON = "http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/appIcon.svg";
-	
-    // Get a reference to the tablet 
-	var tablet = Tablet.getTablet("com.highfidelity.interface.tablet.system");
+    var APP_NAME = "INSTAPORT";
+    var APP_URL = "http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalDropper.html?622222221";
 
-	// "Install" your cool new app to the tablet
-	// The following lines create a button on the tablet's menu screen
-	var button = tablet.addButton({
-        icon: APP_ICON,
-        text: APP_NAME
-    });
-
-	// When user click the app button, we'll display our app on the tablet screen
-	function onClicked() {
-		tablet.gotoWebScreen(APP_URL);
-	}
-    button.clicked.connect(onClicked);
-
-    // Helper function that gives us a position right in front of the user 
-    function getPositionToCreateEntity() {
-    	var direction = Quat.getFront(MyAvatar.orientation);
-    	var distance = 0.5;
-    	var position = Vec3.sum(MyAvatar.position, Vec3.multiply(direction, distance));
-    	position.y += 0.5;
-    	return position;
-    }
-
-    // Handle the events we're recieving from the web UI
-    function onWebEventReceived(event) {
-    	print("InstaPort received a web event:" + event);
-		if (typeof event !== "string") return;	
-		var eventValue = JSON.parse(event).type;			
-		print("IOts "+eventValue);
-		
-		if (eventValue == "storeLocation1") {
-			Window.displayAnnouncement("Teleportal emplaced.");
-            emplaceTeleportal();
-		};
-		
-		if (eventValue == "storeLocation2") {
-			Window.displayAnnouncement("Teleportal emplaced.");
-            emplaceTeleportal();
-		};
-		
-		if (eventValue == "clearPortals")  {
-			Window.displayAnnouncement("Teleportals cleared.");
-			clearTeleportals();
-			unoverlayAllTeleportals();
-		};
-		
-		if (eventValue == "portalRoulette") {
-            isRouletteMode = !isRouletteMode;
-            var state = isRouletteMode ? 'enabled' : 'disabled';
-            Window.displayAnnouncement('Teleportal roulette ' + state);
-		};
-		
-    }
-	
-    tablet.webEventReceived.connect(onWebEventReceived);
-
-	// Provide a way to "uninstall" the app
-	// Here, we write a function called "cleanup" which gets executed when
-	// this script stops running. It'll remove the app button from the tablet.
-	function cleanup() {
-        tablet.removeButton(button);
-	}
-    Script.scriptEnding.connect(cleanup);
-	
-	//--------------------------------------------------
-	    // var AppUi = Script.require('appUi');
+    var button = null;
     var request = Script.require('request').request;
+    var tablet = Tablet.getTablet("com.highfidelity.interface.tablet.system");
 
     var ACTIVATION_RADIUS_M = 1.0;
     var MODEL_FBX = "http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalDropperBall.fbx?2";
     var MODEL_SCALE = { x: 3, y: 3, z: 3 };
     var ANIM_FBX = "http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalDropperBall.fbx?2";
-	var RESTDB_API_KEY = { 'x-apikey': '5bd33229cb62286429f4ee76' };
+    var RESTDB_API_KEY = { 'x-apikey': '5bd33229cb62286429f4ee76' };
     var RESTDB_BASE_URL = 'https://teleportal-66ab.restdb.io/rest/teleportals';
     var TELEPORTION_DESTINATION_OFFSET = { x: 0, y: 0, z: -2 };
     var UPDATE_INTERVAL_MSEC = 1000;
@@ -196,8 +127,8 @@
             Overlays.addOverlay(
                 "model", {
                     url: Script.resolvePath(MODEL_FBX),
-					animationSettings: {url: ANIM_FBX,fps: 40,firstFrame: 0,lastFrame: 180,loop: true,running: true},
-					position: position,
+                    animationSettings: {url: ANIM_FBX,fps: 40,firstFrame: 0,lastFrame: 180,loop: true,running: true},
+                    position: position,
                     scale: MODEL_SCALE,
                     rotation: MyAvatar.orientation,
                     solid: true
@@ -262,14 +193,30 @@
         }
     }
 
-    function emplaceTeleportal() {
-        dbSearch(
-            { USERNAME: Account.username, HOSTNAME_1: null },
-            finishEmplaceTeleportal);
+    function ensureUsername(action) {
+        var username = Account.username;
+        if ('Unknown user' === username) {
+            Window.displayAnnoucement("Cannot " + action + ". You must be logged in.");
+            // XXX Add sound here.
+        } else {
+            return username;
+        }
     }
 
-    function clearTeleportals() {
-        dbDeleteAllTeleportalsForUser(Account.username);
+    function emplaceTeleportal() {
+        var username = ensureUsername();
+        if (username) {
+            dbSearch(
+                { USERNAME: username, HOSTNAME_1: null },
+                finishEmplaceTeleportal);
+        }
+    }
+
+    function deleteThisUsersTeleportals() {
+        var username = ensureUsername();
+        if (username) {
+            dbDeleteAllTeleportalsForUser(username);
+        }
     }
 
     function keyPressEvent(key) {
@@ -284,8 +231,7 @@
                     break;
                 case 'C':
                     Window.displayAnnouncement("Teleportals cleared.");
-                    clearTeleportals();
-                    unoverlayAllTeleportals();
+                    deleteThisUsersTeleportals();
                     break;
                 case 'R':
                     isRouletteMode = !isRouletteMode;
@@ -389,15 +335,57 @@
         );
     }
 
+    // Handle the events we're recieving from the web UI
+    function onWebEventReceived(event) {
+        if (typeof event === "string") {
+            switch (JSON.parse(event).type) {
+                case 'storeLocation1':
+                case 'storeLocation2':
+                    Window.displayAnnouncement("Teleportal emplaced.");
+                    emplaceTeleportal();
+                    break;
+                case 'clearPortals':
+                    Window.displayAnnouncement("Teleportals cleared.");
+                    dbDeleteAllTeleportalsForUser(Account.username);
+                    break;
+                case 'portalRoulette':
+                    isRouletteMode = !isRouletteMode;
+                    var state = isRouletteMode ? 'enabled' : 'disabled';
+                    Window.displayAnnouncement('Teleportal roulette ' + state);
+                    break;
+            }
+        }
+    }
+
+    function onClicked() {
+        tablet.gotoWebScreen(APP_URL);
+    }
+
+    function createTabletButton() {
+        button = tablet.addButton({
+            icon: APP_ICON,
+            text: APP_NAME
+        });
+        button.clicked.connect(onClicked);
+    }
+
+    function destroyTabletButton() {
+        button.clicked.disconnect(onClicked);
+        tablet.removeButton(button);
+    }
+
     function startup() {
-        Script.scriptEnding.connect(shutdown);
-        Controller.keyPressEvent.connect(keyPressEvent);
         isPolling = true;
+        Script.scriptEnding.connect(shutdown);
         updateTeleportalsListUntilNotPolling();
+        Controller.keyPressEvent.connect(keyPressEvent);
+        tablet.webEventReceived.connect(onWebEventReceived);
+        createTabletButton();
     }
 
     function shutdown() { // eslint-disable-line no-unused-vars
         isPolling = false;
+        destroyTabletButton();
         Controller.keyPressEvent.disconnect(keyPressEvent);
         Script.scriptEnding.disconnect(shutdown);
         unoverlayAllTeleportals();
@@ -406,4 +394,4 @@
     startup();
 
 
-}()); 
+}());
