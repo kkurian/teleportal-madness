@@ -300,19 +300,24 @@
         }
     }
 
-    function ensureInstaportIsOverlayed(guid, position) {
+    function ensureInstaportIsOverlayed(guid, position, hostname) {
         if (guid && -1 === allOverlayedInstaports.indexOf(guid)) {
-            overlayInstaport(guid, position);
+            overlayInstaport(guid, position, hostname);
         }
     }
 
     function ensureInstaportsAreOverlayed() {
+        var hostname = AddressManager.hostname;
         var length = allInstaports.length;
         for (var i = 0; i < length; i++) {
             if (i in allInstaports) {
                 var instaport = allInstaports[i];
-                ensureInstaportIsOverlayed(instaport.ID_0, instaport.XYZ_0);
-                ensureInstaportIsOverlayed(instaport.ID_1, instaport.XYZ_1);
+                if (hostname === instaport.HOSTNAME_0) {
+                    ensureInstaportIsOverlayed(instaport.ID_0, instaport.XYZ_0, hostname);
+                }
+                if (hostname === instaport.HOSTNAME_1) {
+                    ensureInstaportIsOverlayed(instaport.ID_1, instaport.XYZ_1, hostname);
+                }
             }
         }
     }
