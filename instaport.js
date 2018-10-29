@@ -29,7 +29,6 @@
     var TELEPORTION_DESTINATION_OFFSET = { x: 0, y: 0, z: -2 };
     var UPDATE_INTERVAL_MSEC = 1000;
 
-    var allInstaports = [];
     var isPolling = false;
     var isRouletteMode = false;
     var instaportOverlaysByHostname = {};
@@ -106,39 +105,41 @@
         });
     }
 
-    function unoverlayInstaport() {
-
-    }
-
     function unoverlayAllInstaports() {
         Object.keys(instaportOverlaysByHostname).forEach(function(hostname) {
             var instaportOverlays = instaportOverlaysByHostname[hostname];
-            Object.keys(instaportOverlays).forEach(function(instaport) {
-                Overlays.deleteOverlay(instaportOverlays[instaport]);
+            Object.keys(instaportOverlays).forEach(function(instaportId) {
+                Overlays.deleteOverlay(instaportOverlays[instaportId].overlay);
             });
         });
         instaportOverlaysByHostname = {};
     }
 
-    function overlayInstaport(guid, position, hostname) {
+    function overlayInstaport(instaport, instaportId) {
+        print("!!! overlay ", JSON.stringify(instaport), instaportId);
+        var hostname = instaportHostname(instaport, instaportId);
+        var position = instaportPosition(instaport, instaportId);
         instaportOverlaysByHostname[hostname] = instaportOverlaysByHostname[hostname] || {};
-        instaportOverlaysByHostname[hostname][guid] = Overlays.addOverlay(
-            "model", {
-                url: Script.resolvePath(MODEL_FBX),
-                animationSettings: {
-                    url: ANIM_FBX,
-                    fps: 40,
-                    firstFrame: 0,
-                    lastFrame: 180,
-                    loop: true,
-                    running: true
-                },
-                position: position,
-                scale: MODEL_SCALE,
-                rotation: MyAvatar.orientation,
-                solid: true
-            }
-        );
+        instaportOverlaysByHostname[hostname][instaportId] = {
+            instaport: instaport,
+            overlay: Overlays.addOverlay(
+                "model", {
+                    url: Script.resolvePath(MODEL_FBX),
+                    animationSettings: {
+                        url: ANIM_FBX,
+                        fps: 40,
+                        firstFrame: 0,
+                        lastFrame: 180,
+                        loop: true,
+                        running: true
+                    },
+                    position: position,
+                    scale: MODEL_SCALE,
+                    rotation: MyAvatar.orientation,
+                    solid: true
+                }
+            )
+        };
     }
 
     function newOverlayPosition() {
@@ -159,10 +160,6 @@
             XYZ_0: position,
             CREATED_AT_0: now.toUTCString() };
         print("Emplace first instaport: ", JSON.stringify(document));
-        // Not strictly necessary but makes the instaport appear more
-        // rapidly for the local user than waiting for the db update to
-        // round-trip.
-        overlayInstaport(guid, position, hostname);
         dbInsert(document);
     }
 
@@ -178,9 +175,6 @@
             CREATED_AT_1: now.toUTCString() };
         print("Found incomplete pair: ", JSON.stringify(response[0]));
         print("Emplace second instaport: ", JSON.stringify(fields));
-        // Not strictly necessary but makes the instaport appear more
-        // rapidly than waiting for the db update to round-trip.
-        overlayInstaport(guid, position, hostname);
         dbUpdate(response[0]._id, fields);
     }
 
@@ -261,7 +255,7 @@
         return "hifi://" + hostname + '/' + xyz.x + "," + xyz.y + "," + xyz.z;
     }
 
-    function teleport(hostname, xyz) {
+    function materialize(hostname, xyz) {
         Window.location = uri(
             hostname,
             Vec3.sum(
@@ -271,7 +265,7 @@
                     TELEPORTION_DESTINATION_OFFSET)));
     }
 
-    function teleportAtRandom() {
+    function materializeAtRandom() {
         request({
             uri: RESTDB_BASE_URL,
             method: 'GET',
@@ -280,55 +274,88 @@
             print("Big result ", JSON.stringify(result));
             var instaport = result[Math.floor(Math.random() * result.length)];
             if (Math.floor(Math.random() * 2)) {
-                teleport(instaport.HOSTNAME_0, instaport.XYZ_0);
+                materialize(instaport.HOSTNAME_0, instaport.XYZ_0);
             } else {
-                teleport(instaport.HOSTNAME_1, instaport.XYZ_1);
+                materialize(instaport.HOSTNAME_1, instaport.XYZ_1);
             }
         });
     }
 
+    function beam(hostname, xyz) {
+        if (isRouletteMode) {
+            materializeAtRandom();
+        } else {
+            materialize(hostname, xyz);
+        }
+    }
+
     function energize() {
-        var hostname = AddressManager.hostname;
-        for (var i = 0; i < allInstaports.length; i++) {
-            if (i in allInstaports) {
-                var instaport = allInstaports[i];
-                if (hostname === instaport.HOSTNAME_0 && inRange(instaport.XYZ_0)) {
-                    if (isRouletteMode) {
-                        teleportAtRandom();
-                    } else {
-                        teleport(instaport.HOSTNAME_1, instaport.XYZ_1);
-                    }
-                    break;
-                } else if (hostname === instaport.HOSTNAME_1 && inRange(instaport.XYZ_1)) {
-                    if (isRouletteMode) {
-                        teleportAtRandom();
-                    } else {
-                        teleport(instaport.HOSTNAME_0, instaport.XYZ_0);
-                    }
-                    break;
+        var instaportOverlays = instaportOverlaysByHostname[AddressManager.hostname];
+        if (instaportOverlays) {
+            Object.keys(instaportOverlays).forEach(function(instaportId) {
+                var instaport = instaportOverlays[instaportId].instaport;
+                if (instaportId === instaport.ID_0 && inRange(instaport.XYZ_0)) {
+                    beam(instaport.HOSTNAME_1, instaport.XYZ_1);
+                    return;
+                } else if (inRange(instaport.XYZ_1)) {
+                    beam(instaport.HOSTNAME_0, instaport.XYZ_0);
+                    return;
                 }
-            }
+            });
         }
     }
 
-    function ensureInstaportIsOverlayed(guid, position, hostname) {
-        var overlaysHere = instaportOverlaysByHostname[hostname];
-        if (!(overlaysHere && guid in overlaysHere)) {
-            overlayInstaport(guid, position, hostname);
-        }
+    function instaportHostname(instaport, instaportId) {
+        return (instaportId === instaport.ID_0) ? instaport.HOSTNAME_0 :
+               (instaportId === instaport.ID_1) ? instaport.HOSTNAME_1 : undefined; // eslint-disable-line indent
     }
 
-    function ensureInstaportsAreOverlayed(hostname) {
-        for (var i = 0; i < length; i++) {
-            if (i in allInstaports) {
-                var instaport = allInstaports[i];
+    function instaportPosition(instaport, instaportId) {
+        return (instaportId === instaport.ID_0) ? instaport.XYZ_0 :
+               (instaportId === instaport.ID_1) ? instaport.XYZ_1 : undefined; // eslint-disable-line indent
+    }
+
+    function ensureInstaportsAreOverlayed(hostname, instaports) {
+        if (instaports) {
+            var instaportOverlays = instaportOverlaysByHostname[hostname];
+            instaports.forEach(function(instaport) {
                 if (hostname === instaport.HOSTNAME_0) {
-                    ensureInstaportIsOverlayed(instaport.ID_0, instaport.XYZ_0, hostname);
+                    if (!(instaportOverlays && instaport.ID_0 in instaportOverlays)) {
+                        overlayInstaport(instaport, instaport.ID_0);
+                    }
                 }
                 if (hostname === instaport.HOSTNAME_1) {
-                    ensureInstaportIsOverlayed(instaport.ID_1, instaport.XYZ_1, hostname);
+                    if (!(instaportOverlays && instaport.ID_1 in instaportOverlays)) {
+                        overlayInstaport(instaport, instaport.ID_1);
+                    }
                 }
-            }
+            });
+        }
+    }
+
+    function unoverlayInstaport(hostname, instaportId) {
+        var instaportOverlays = instaportOverlaysByHostname[hostname];
+        Overlays.deleteOverlay(instaportOverlays[instaportId].overlay);
+        delete instaportOverlays[instaportId];
+    }
+
+    function ensureOldInstaportsAreUnoverlayed(hostname, instaports) {
+        var instaportOverlays = instaportOverlaysByHostname[hostname];
+        if (instaportOverlays) {
+            var instaportIds = {};
+            instaports.forEach(function(instaport) {
+                if (hostname === instaport.HOSTNAME_0) {
+                    instaportIds[instaport.ID_0] = true;
+                }
+                if (hostname === instaport.HOSTNAME_1) {
+                    instaportIds[instaport.ID_1] = true;
+                }
+            });
+            Object.keys(instaportOverlays).forEach(function(instaportId) {
+                if (!(instaportId in instaportIds)) {
+                    unoverlayInstaport(hostname, instaportId);
+                }
+            });
         }
     }
 
@@ -337,14 +364,13 @@
         dbSearch(
             { $or: [{ HOSTNAME_0: hostname }, { HOSTNAME_1: hostname }] },
             function (err, response) {
-                allInstaports = response;
-                ensureInstaportsAreOverlayed(hostname);
+                ensureOldInstaportsAreUnoverlayed(hostname, response);
+                ensureInstaportsAreOverlayed(hostname, response);
                 energize();
                 if (isPolling) {
                     Script.setTimeout(
                         updateInstaportsListUntilNotPolling,
                         UPDATE_INTERVAL_MSEC);
-                    print("all instaports here: ", JSON.stringify(allInstaports));
                 }
             }
         );
