@@ -143,14 +143,16 @@
 
     function activateInstaport(instaport, instaportId) {
         var hostname = instaportHostname(instaport, instaportId);
-        var instaportOverlay = instaportOverlaysByHostname[hostname][instaportId];
-        if (instaportOverlay) {
-            Overlays.editOverlay(
-                instaportOverlay.overlay, {
-                    url: Script.resolvePath(FBX_ACTIVE),
-                    animationSettings: overlayAnimationSettings(FBX_ACTIVE) }
-            );
-            instaportOverlay.instaport = instaport;
+        if (instaportOverlaysByHostname[hostname]) {
+            var instaportOverlay = instaportOverlaysByHostname[hostname][instaportId];
+            if (instaportOverlay) {
+                Overlays.editOverlay(
+                    instaportOverlay.overlay, {
+                        url: Script.resolvePath(FBX_ACTIVE),
+                        animationSettings: overlayAnimationSettings(FBX_ACTIVE) }
+                );
+                instaportOverlay.instaport = instaport;
+            }
         }
     }
 
