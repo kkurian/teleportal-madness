@@ -21,14 +21,17 @@
     var tablet = Tablet.getTablet("com.highfidelity.interface.tablet.system");
 
     var ACTIVATION_RADIUS_M = 1.0;
+    var ENERGIZE_INTERVAL_MSEC = 100;
     var FBX_ACTIVE = 'http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalGateway_Active.fbx';
     var FBX_INACTIVE = 'http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalGateway_InActive.fbx';
     var MODEL_SCALE = { x: 3, y: 3, z: 3 };
     var RESTDB_API_KEY = { 'x-apikey': '5bd33229cb62286429f4ee76' };
     var RESTDB_BASE_URL = 'https://teleportal-66ab.restdb.io/rest/teleportals';
+    // var SOUND_TELEPORT = "./teleport.wav";
+    // var SOUND_CREATE =  "./create.wav";
+    // var SOUND_DELAY_MSEC = 1000;
     var TELEPORTION_DESTINATION_OFFSET = { x: 0, y: 0, z: -2 };
     var UPDATE_INTERVAL_MSEC = 750;
-    var ENERGIZE_INTERVAL_MSEC = 100;
 
     var isRunning = false;
     var isRouletteMode = false;
@@ -187,6 +190,7 @@
             XYZ_0: position,
             CREATED_AT_0: now.toUTCString() };
         print("Emplace first instaport: ", JSON.stringify(document));
+        // playSound(SOUND_CREATE, position);
         dbInsert(document);
     }
 
@@ -202,6 +206,7 @@
             CREATED_AT_1: now.toUTCString() };
         print("Found incomplete pair: ", JSON.stringify(response[0]));
         print("Emplace second instaport: ", JSON.stringify(fields));
+        // playSound(SOUND_CREATE, position);
         dbUpdate(response[0]._id, fields);
     }
 
@@ -282,14 +287,27 @@
         return "hifi://" + hostname + '/' + xyz.x + "," + xyz.y + "," + xyz.z;
     }
 
+    // function playSound(url, position) {
+    //     var sound = SoundCache.getSound(Script.resolvePath(url));
+    //     var soundOptions = {
+    //         volume: 1.0,
+    //         loop: false,
+    //         position: position
+    //     };
+    //     Script.setTimeout(function() {
+    //         // per exaple in the docs: give the sound time to load
+    //         Audio.playSound(sound, soundOptions);
+    //     }, SOUND_DELAY_MSEC);
+    // }
+
     function materialize(hostname, xyz) {
-        Window.location = uri(
-            hostname,
-            Vec3.sum(
-                xyz,
-                Vec3.multiplyQbyV(
-                    MyAvatar.orientation,
-                    TELEPORTION_DESTINATION_OFFSET)));
+        var destination = Vec3.sum(
+            xyz,
+            Vec3.multiplyQbyV(
+                MyAvatar.orientation,
+                TELEPORTION_DESTINATION_OFFSET));
+        // playSound(SOUND_TELEPORT, MyAvatar.position);
+        Window.location = uri(hostname, destination);
     }
 
     function materializeAtRandom() {
