@@ -168,6 +168,9 @@
             // changed domains while we were processing overlay updates.
             return;
         }
+        print("AddressManager.hostname ", AddressManager.hostname);
+        print("hostname ", hostname);
+        print("overlayInstaport ", JSON.stringify(instaport));
         var position = instaportPosition(instaport, instaportId);
         var fbx = (instaport.ID_0 && instaport.ID_1) ? FBX_ACTIVE : FBX_INACTIVE;
         instaportOverlaysByHostname[hostname] = instaportOverlaysByHostname[hostname] || {};
