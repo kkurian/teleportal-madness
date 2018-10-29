@@ -21,9 +21,11 @@
     var tablet = Tablet.getTablet("com.highfidelity.interface.tablet.system");
 
     var ACTIVATION_RADIUS_M = 1.0;
-    var MODEL_FBX = "http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalDropperBall.fbx?2";
+    var ANIM_FBX_ACTIVE = 'http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalGateway_Active.fbx';
+    var ANIM_FBX_INACTIVE = 'http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalGateway_InActive.fbx';
+    var MODEL_FBX_ACTIVE = 'http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalGateway_Active.fbx';
+    var MODEL_FBX_INACTIVE = 'http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalGateway_InActive.fbx';
     var MODEL_SCALE = { x: 3, y: 3, z: 3 };
-    var ANIM_FBX = "http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalDropperBall.fbx?2";
     var RESTDB_API_KEY = { 'x-apikey': '5bd33229cb62286429f4ee76' };
     var RESTDB_BASE_URL = 'https://teleportal-66ab.restdb.io/rest/teleportals';
     var TELEPORTION_DESTINATION_OFFSET = { x: 0, y: 0, z: -2 };
@@ -124,12 +126,12 @@
             instaport: instaport,
             overlay: Overlays.addOverlay(
                 "model", {
-                    url: Script.resolvePath(MODEL_FBX),
+                    url: Script.resolvePath(MODEL_FBX_ACTIVE),
                     animationSettings: {
-                        url: ANIM_FBX,
-                        fps: 40,
+                        url: ANIM_FBX_ACTIVE,
+                        fps: 540,
                         firstFrame: 0,
-                        lastFrame: 180,
+                        lastFrame: 1120,
                         loop: true,
                         running: true
                     },
@@ -311,8 +313,13 @@
     }
 
     function instaportPosition(instaport, instaportId) {
-        return (instaportId === instaport.ID_0) ? instaport.XYZ_0 :
-               (instaportId === instaport.ID_1) ? instaport.XYZ_1 : undefined; // eslint-disable-line indent
+        var position = (instaportId === instaport.ID_0) ? instaport.XYZ_0 :
+                       (instaportId === instaport.ID_1) ? instaport.XYZ_1 : // eslint-disable-line indent
+                       undefined; // eslint-disable-line indent
+        if (position) {
+            position.y += 0.25;
+        }
+        return position;
     }
 
     function ensureInstaportsAreOverlayed(hostname, instaports) {
