@@ -171,7 +171,7 @@
     function newOverlayPosition() {
         return Vec3.sum(
             MyAvatar.position,
-            Vec3.multiplyQbyV(MyAvatar.orientation, { x: 0, y: 0, z: -2}));
+            Vec3.multiplyQbyV(MyAvatar.orientation, { x: 0, y: 0, z: -3}));
     }
 
     function createInstaportA() {
