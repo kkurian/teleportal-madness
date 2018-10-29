@@ -29,11 +29,11 @@
     var TELEPORTION_DESTINATION_OFFSET = { x: 0, y: 0, z: -2 };
     var UPDATE_INTERVAL_MSEC = 1000;
 
-    var allOverlayedTeleportals = [];
-    var allTeleportals = [];
+    var allOverlayedInstaports = [];
+    var allInstaports = [];
     var isPolling = false;
     var isRouletteMode = false;
-    var teleportalOverlaysByHostname = {};
+    var instaportOverlaysByHostname = {};
 
     function quasiGUID() {
         // From https://stackoverflow.com/questions/105034/create-guid-uuid-in-javascript
@@ -82,7 +82,7 @@
         }, printResponse);
     }
 
-    function dbDeleteAllTeleportalsForUser(username) {
+    function dbDeleteAllInstaportsForUser(username) {
         dbSearch({ USERNAME: username }, function (err, response) {
             var ids = response.map(function (x, i) { return x._id; }); // eslint-disable-line brace-style
             dbDeleteRecords(ids);
@@ -107,9 +107,9 @@
         });
     }
 
-    function unoverlayAllTeleportals() {
-        for (var hostname in teleportalOverlaysByHostname) {
-            var overlays = teleportalOverlaysByHostname[hostname];
+    function unoverlayAllInstaports() {
+        for (var hostname in instaportOverlaysByHostname) {
+            var overlays = instaportOverlaysByHostname[hostname];
             var length = overlays.length;
             for (var i = 0; i < length; i++) {
                 if (i in overlays) {
@@ -120,10 +120,10 @@
         }
     }
 
-    function overlayTeleportal(guid, position) {
+    function overlayInstaport(guid, position) {
         var hostname = AddressManager.hostname;
-        teleportalOverlaysByHostname[hostname] = teleportalOverlaysByHostname[hostname] || [];
-        teleportalOverlaysByHostname[hostname].push(
+        instaportOverlaysByHostname[hostname] = instaportOverlaysByHostname[hostname] || [];
+        instaportOverlaysByHostname[hostname].push(
             Overlays.addOverlay(
                 "model", {
                     url: Script.resolvePath(MODEL_FBX),
@@ -134,7 +134,7 @@
                     solid: true
                 }
             ));
-        allOverlayedTeleportals.push(guid);
+        allOverlayedInstaports.push(guid);
     }
 
     function newOverlayPosition() {
@@ -143,7 +143,7 @@
             Vec3.multiplyQbyV(MyAvatar.orientation, { x: 0, y: 0, z: -2}));
     }
 
-    function createTeleportalA() {
+    function createInstaportA() {
         var now = new Date();
         var guid = quasiGUID();
         var position = newOverlayPosition();
@@ -153,12 +153,12 @@
             HOSTNAME_0: AddressManager.hostname,
             XYZ_0: position,
             CREATED_AT_0: now.toUTCString() };
-        print("Emplace first teleportal: ", JSON.stringify(document));
+        print("Emplace first instaport: ", JSON.stringify(document));
         dbInsert(document);
-        overlayTeleportal(guid, position);
+        overlayInstaport(guid, position);
     }
 
-    function createTeleportalB(response) {
+    function createInstaportB(response) {
         var now = new Date();
         var guid = quasiGUID();
         var position = newOverlayPosition();
@@ -168,19 +168,19 @@
             XYZ_1: position,
             CREATED_AT_1: now.toUTCString() };
         print("Found incomplete pair: ", JSON.stringify(response[0]));
-        print("Emplace second teleportal: ", JSON.stringify(fields));
+        print("Emplace second instaport: ", JSON.stringify(fields));
         dbUpdate(response[0]._id, fields);
-        overlayTeleportal(guid, position);
+        overlayInstaport(guid, position);
     }
 
-    function finishEmplaceTeleportal(err, response) {
+    function finishEmplaceInstaport(err, response) {
         print("Search response: ", JSON.stringify(response));
         if (response) {
             if (!err) {
                 if (0 === response.length) {
-                    createTeleportalA();
+                    createInstaportA();
                 } else if (1 === response.length) {
-                    createTeleportalB(response);
+                    createInstaportB(response);
                 } else {
                     print("Unexpected response: ", JSON.stringify(response));
                     print("Corresponding error: ", JSON.stringify(err));
@@ -203,19 +203,21 @@
         }
     }
 
-    function emplaceTeleportal() {
+    function emplaceInstaport() {
         var username = ensureUsername();
         if (username) {
+            Window.displayAnnouncement("Instaport emplaced.");
             dbSearch(
                 { USERNAME: username, HOSTNAME_1: null },
-                finishEmplaceTeleportal);
+                finishEmplaceInstaport);
         }
     }
 
-    function deleteThisUsersTeleportals() {
+    function deleteThisUsersInstaports() {
         var username = ensureUsername();
         if (username) {
-            dbDeleteAllTeleportalsForUser(username);
+            Window.displayAnnouncement("Instaports cleared.");
+            dbDeleteAllInstaportsForUser(username);
         }
     }
 
@@ -226,17 +228,15 @@
             actual = key.isShifted ? actual : actual.toLowerCase();
             switch (actual) {
                 case 'T':
-                    Window.displayAnnouncement("Teleportal emplaced.");
-                    emplaceTeleportal();
+                    emplaceInstaport();
                     break;
                 case 'C':
-                    Window.displayAnnouncement("Teleportals cleared.");
-                    deleteThisUsersTeleportals();
+                    deleteThisUsersInstaports();
                     break;
                 case 'R':
                     isRouletteMode = !isRouletteMode;
                     var state = isRouletteMode ? 'enabled' : 'disabled';
-                    Window.displayAnnouncement('Teleportal roulette ' + state);
+                    Window.displayAnnouncement('Instaport roulette ' + state);
                     break;
             }
         }
@@ -267,32 +267,32 @@
             headers: RESTDB_API_KEY
         }, function (err, result) {
             print("Big result ", JSON.stringify(result));
-            var teleportal = result[Math.floor(Math.random() * result.length)];
+            var instaport = result[Math.floor(Math.random() * result.length)];
             if (Math.floor(Math.random() * 2)) {
-                teleport(teleportal.HOSTNAME_0, teleportal.XYZ_0);
+                teleport(instaport.HOSTNAME_0, instaport.XYZ_0);
             } else {
-                teleport(teleportal.HOSTNAME_1, teleportal.XYZ_1);
+                teleport(instaport.HOSTNAME_1, instaport.XYZ_1);
             }
         });
     }
 
     function energize() {
         var hostname = AddressManager.hostname;
-        for (var i = 0; i < allTeleportals.length; i++) {
-            if (i in allTeleportals) {
-                var teleportal = allTeleportals[i];
-                if (hostname === teleportal.HOSTNAME_0 && inRange(teleportal.XYZ_0)) {
+        for (var i = 0; i < allInstaports.length; i++) {
+            if (i in allInstaports) {
+                var instaport = allInstaports[i];
+                if (hostname === instaport.HOSTNAME_0 && inRange(instaport.XYZ_0)) {
                     if (isRouletteMode) {
                         teleportAtRandom();
                     } else {
-                        teleport(teleportal.HOSTNAME_1, teleportal.XYZ_1);
+                        teleport(instaport.HOSTNAME_1, instaport.XYZ_1);
                     }
                     break;
-                } else if (hostname === teleportal.HOSTNAME_1 && inRange(teleportal.XYZ_1)) {
+                } else if (hostname === instaport.HOSTNAME_1 && inRange(instaport.XYZ_1)) {
                     if (isRouletteMode) {
                         teleportAtRandom();
                     } else {
-                        teleport(teleportal.HOSTNAME_0, teleportal.XYZ_0);
+                        teleport(instaport.HOSTNAME_0, instaport.XYZ_0);
                     }
                     break;
                 }
@@ -300,36 +300,36 @@
         }
     }
 
-    function ensureTeleportalIsOverlayed(guid, position) {
-        if (guid && -1 === allOverlayedTeleportals.indexOf(guid)) {
-            overlayTeleportal(guid, position);
+    function ensureInstaportIsOverlayed(guid, position) {
+        if (guid && -1 === allOverlayedInstaports.indexOf(guid)) {
+            overlayInstaport(guid, position);
         }
     }
 
-    function ensureTeleportalsAreOverlayed() {
-        var length = allTeleportals.length;
+    function ensureInstaportsAreOverlayed() {
+        var length = allInstaports.length;
         for (var i = 0; i < length; i++) {
-            if (i in allTeleportals) {
-                var teleportal = allTeleportals[i];
-                ensureTeleportalIsOverlayed(teleportal.ID_0, teleportal.XYZ_0);
-                ensureTeleportalIsOverlayed(teleportal.ID_1, teleportal.XYZ_1);
+            if (i in allInstaports) {
+                var instaport = allInstaports[i];
+                ensureInstaportIsOverlayed(instaport.ID_0, instaport.XYZ_0);
+                ensureInstaportIsOverlayed(instaport.ID_1, instaport.XYZ_1);
             }
         }
     }
 
-    function updateTeleportalsListUntilNotPolling() {
+    function updateInstaportsListUntilNotPolling() {
         var thisHostname = AddressManager.hostname;
         dbSearch(
             { $or: [{ HOSTNAME_0: thisHostname }, { HOSTNAME_1: thisHostname }] },
             function (err, response) {
-                allTeleportals = response;
-                ensureTeleportalsAreOverlayed();
+                allInstaports = response;
+                ensureInstaportsAreOverlayed();
                 energize();
                 if (isPolling) {
                     Script.setTimeout(
-                        updateTeleportalsListUntilNotPolling,
+                        updateInstaportsListUntilNotPolling,
                         UPDATE_INTERVAL_MSEC);
-                    print("all teleportals here: ", JSON.stringify(allTeleportals));
+                    print("all instaports here: ", JSON.stringify(allInstaports));
                 }
             }
         );
@@ -341,17 +341,17 @@
             switch (JSON.parse(event).type) {
                 case 'storeLocation1':
                 case 'storeLocation2':
-                    Window.displayAnnouncement("Teleportal emplaced.");
-                    emplaceTeleportal();
+                    Window.displayAnnouncement("Instaport emplaced.");
+                    emplaceInstaport();
                     break;
                 case 'clearPortals':
-                    Window.displayAnnouncement("Teleportals cleared.");
-                    dbDeleteAllTeleportalsForUser(Account.username);
+                    Window.displayAnnouncement("Instaports cleared.");
+                    dbDeleteAllInstaportsForUser(Account.username);
                     break;
                 case 'portalRoulette':
                     isRouletteMode = !isRouletteMode;
                     var state = isRouletteMode ? 'enabled' : 'disabled';
-                    Window.displayAnnouncement('Teleportal roulette ' + state);
+                    Window.displayAnnouncement('Instaport roulette ' + state);
                     break;
             }
         }
@@ -377,7 +377,7 @@
     function startup() {
         isPolling = true;
         Script.scriptEnding.connect(shutdown);
-        updateTeleportalsListUntilNotPolling();
+        updateInstaportsListUntilNotPolling();
         Controller.keyPressEvent.connect(keyPressEvent);
         tablet.webEventReceived.connect(onWebEventReceived);
         createTabletButton();
@@ -388,7 +388,7 @@
         destroyTabletButton();
         Controller.keyPressEvent.disconnect(keyPressEvent);
         Script.scriptEnding.disconnect(shutdown);
-        unoverlayAllTeleportals();
+        unoverlayAllInstaports();
     }
 
     startup();
