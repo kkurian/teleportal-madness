@@ -303,7 +303,8 @@
         var soundOptions = {
             volume: 1.0,
             loop: false,
-            position: position
+            position: position,
+            localOnly: true
         };
         Script.setTimeout(function() {
             // per exaple in the docs: give the sound time to load
