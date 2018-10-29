@@ -21,10 +21,8 @@
     var tablet = Tablet.getTablet("com.highfidelity.interface.tablet.system");
 
     var ACTIVATION_RADIUS_M = 1.0;
-    var ANIM_FBX_ACTIVE = 'http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalGateway_Active.fbx';
-    var ANIM_FBX_INACTIVE = 'http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalGateway_InActive.fbx';
-    var MODEL_FBX_ACTIVE = 'http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalGateway_Active.fbx';
-    var MODEL_FBX_INACTIVE = 'http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalGateway_InActive.fbx';
+    var FBX_ACTIVE = 'http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalGateway_Active.fbx';
+    var FBX_INACTIVE = 'http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalGateway_InActive.fbx';
     var MODEL_SCALE = { x: 3, y: 3, z: 3 };
     var RESTDB_API_KEY = { 'x-apikey': '5bd33229cb62286429f4ee76' };
     var RESTDB_BASE_URL = 'https://teleportal-66ab.restdb.io/rest/teleportals';
@@ -117,31 +115,57 @@
         instaportOverlaysByHostname = {};
     }
 
+    function overlayAnimationSettings(fbx) {
+        return {
+            url: Script.resolvePath(fbx),
+            fps: 540,
+            firstFrame: 0,
+            lastFrame: 1120,
+            loop: true,
+            running: true
+        };
+    }
+
+    function overlayModel(fbx, position) {
+        return {
+            url: Script.resolvePath(fbx),
+            animationSettings: overlayAnimationSettings(fbx),
+            position: position,
+            scale: MODEL_SCALE,
+            rotation: MyAvatar.orientation,
+            solid: true
+        };
+    }
+
+    function activateInstaport(instaport, instaportId) {
+        var hostname = instaportHostname(instaport, instaportId);
+        var instaportOverlay = instaportOverlaysByHostname[hostname][instaportId];
+        if (instaportOverlay) {
+            Overlays.editOverlay(
+                instaportOverlay.overlay, {
+                    url: Script.resolvePath(FBX_ACTIVE),
+                    animationSettings: overlayAnimationSettings(FBX_ACTIVE) }
+            );
+        }
+    }
+
+    function otherInstaportId(instaport, instaportId) {
+        return (instaportId === instaport.ID_0) ? instaport.ID_1 : instaport.ID_0;
+    }
+
     function overlayInstaport(instaport, instaportId) {
         print("!!! overlay ", JSON.stringify(instaport), instaportId);
         var hostname = instaportHostname(instaport, instaportId);
         var position = instaportPosition(instaport, instaportId);
+        var fbx = (instaport.ID_0 && instaport.ID_1) ? FBX_ACTIVE : FBX_INACTIVE;
         instaportOverlaysByHostname[hostname] = instaportOverlaysByHostname[hostname] || {};
         instaportOverlaysByHostname[hostname][instaportId] = {
             instaport: instaport,
-            overlay: Overlays.addOverlay(
-                "model", {
-                    url: Script.resolvePath(MODEL_FBX_ACTIVE),
-                    animationSettings: {
-                        url: ANIM_FBX_ACTIVE,
-                        fps: 540,
-                        firstFrame: 0,
-                        lastFrame: 1120,
-                        loop: true,
-                        running: true
-                    },
-                    position: position,
-                    scale: MODEL_SCALE,
-                    rotation: MyAvatar.orientation,
-                    solid: true
-                }
-            )
+            overlay: Overlays.addOverlay("model", overlayModel(fbx, position))
         };
+        if (FBX_ACTIVE === fbx) {
+            activateInstaport(instaport, otherInstaportId(instaport, instaportId));
+        }
     }
 
     function newOverlayPosition() {
