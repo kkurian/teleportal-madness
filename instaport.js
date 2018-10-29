@@ -17,7 +17,7 @@
 	// Link to your app's HTML file
 	var APP_URL = "http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalDropper.html?622222221";
     // Path to the icon art for your app
-    var APP_ICON = "http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalButton-faceRight-inactive.svg";
+    var APP_ICON = "http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/appIcon.svg";
 	
     // Get a reference to the tablet 
 	var tablet = Tablet.getTablet("com.highfidelity.interface.tablet.system");
@@ -89,12 +89,13 @@
 	    // var AppUi = Script.require('appUi');
     var request = Script.require('request').request;
 
-    var ACTIVATION_RADIUS_M = 2.0;
-    var MODEL_FBX = "teleportal.fbx";
-    var MODEL_SCALE = { x: 1, y: 1, z: 1 };
-    var RESTDB_API_KEY = { 'x-apikey': '5bd33229cb62286429f4ee76' };
+    var ACTIVATION_RADIUS_M = 1.0;
+    var MODEL_FBX = "http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalDropperBall.fbx?2";
+    var MODEL_SCALE = { x: 3, y: 3, z: 3 };
+    var ANIM_FBX = "http://hifi-content.s3.amazonaws.com/caitlyn/production/portalDropper/portalDropper/portalDropperBall.fbx?2";
+	var RESTDB_API_KEY = { 'x-apikey': '5bd33229cb62286429f4ee76' };
     var RESTDB_BASE_URL = 'https://teleportal-66ab.restdb.io/rest/teleportals';
-    var TELEPORTION_DESTINATION_OFFSET = { x: 0, y: 0, z: 3 };
+    var TELEPORTION_DESTINATION_OFFSET = { x: 0, y: 0, z: -2 };
     var UPDATE_INTERVAL_MSEC = 1000;
 
     var allOverlayedTeleportals = [];
@@ -195,7 +196,8 @@
             Overlays.addOverlay(
                 "model", {
                     url: Script.resolvePath(MODEL_FBX),
-                    position: position,
+					animationSettings: {url: ANIM_FBX,fps: 40,firstFrame: 0,lastFrame: 180,loop: true,running: true},
+					position: position,
                     scale: MODEL_SCALE,
                     rotation: MyAvatar.orientation,
                     solid: true
@@ -207,7 +209,7 @@
     function newOverlayPosition() {
         return Vec3.sum(
             MyAvatar.position,
-            Vec3.multiplyQbyV(MyAvatar.orientation, { x: 0, y: 0, z: -6}));
+            Vec3.multiplyQbyV(MyAvatar.orientation, { x: 0, y: 0, z: -2}));
     }
 
     function createTeleportalA() {
