@@ -28,7 +28,7 @@
     var RESTDB_API_KEY = { 'x-apikey': '5bd33229cb62286429f4ee76' };
     var RESTDB_BASE_URL = 'https://teleportal-66ab.restdb.io/rest/teleportals';
     var SOUND_TELEPORT = "./teleport.wav";
-    var SOUND_CREATE =  "./appears.wav";
+    var SOUND_CREATE =  "./create.wav";
     var SOUND_DELAY_MSEC = 100;
     var TELEPORTION_DESTINATION_OFFSET = { x: 0, y: 0, z: -2 };
     var UPDATE_INTERVAL_MSEC = 750;
